@@ -3,122 +3,98 @@
 
 // Array of fortune cookie messages stored in flash memory
 const char* const fortunes[] PROGMEM = {
-    // Life and Wisdom
-    "Life is a series of surprises waiting to be discovered",
-    "The best way to predict the future is to create it",
-    "A journey of a thousand miles begins with a single step",
-    "Wisdom comes from experience, experience comes from mistakes",
-    "Every cloud has a silver lining, patience reveals it",
-    "The greatest adventure is the one that lies ahead",
-    "Time is the wisest counselor of all",
-    "Fortune favors the bold and the prepared mind",
+    // Wisdom & Philosophy (Confucian-inspired)
+    "The superior mind seeks truth, while the small mind seeks conformity",
+    "Silence is the true friend that never betrays your secrets",
+    "The journey of wisdom begins by calling things by their right names",
+    "Learning without thought is labor lost, thought without learning perilous",
+    "The noble soul has reverence without fear, the small soul fears blindly",
+    "The gem cannot be polished without friction, nor man without trials",
+    "When anger rises, think of the consequences that follow",
+    "The wise find pleasure in water, the virtuous find pleasure in hills",
     
-    // Success and Opportunity
-    "Success is not final, failure is not fatal",
-    "Opportunities multiply as they are seized",
-    "Your potential is limited only by your imagination",
-    "The harder you work, the luckier you get",
-    "Small steps lead to big achievements",
-    "Today's preparation determines tomorrow's success",
-    "The best time to plant a tree was 20 years ago, the second best time is now",
-    "Success comes to those who dare to begin",
-    
-    // Happiness and Well-being
-    "Happiness is found when you stop comparing yourself to other people",
-    "The greatest happiness comes from the smallest acts of kindness",
-    "Your smile will be your umbrella for life's rain",
-    "Joy is not in things, it is in us",
-    "The secret of happiness is not in doing what one likes, but in liking what one does",
-    "A merry heart is better than a full purse",
-    "Happiness is a choice that requires effort at times",
-    
-    // Relationships and Love
-    "Love all, trust a few, do wrong to none",
-    "The heart that gives, gathers",
-    "A kind word will keep someone warm for years",
-    "True friendship is a plant of slow growth",
-    "The greatest gift is the gift of understanding",
-    "To have a friend, be a friend",
-    "Love is not about possession, it's about appreciation",
+    // Life Insights
+    "Experience is the lantern that illuminates the path behind us",
+    "Destiny weaves the threads of chance into patterns of meaning",
+    "Knowledge brightens the path, wisdom illuminates the journey",
+    "The deepest rivers flow with the least sound and greatest force",
+    "Time reveals truth as autumn reveals the stars at dawn",
+    "The bamboo that bends is stronger than the oak that resists",
+    "In the garden of life, patience bears the sweetest fruit",
+    "The mirror reflects the face, but wisdom reflects the heart",
     
     // Personal Growth
-    "Your mind is your greatest asset, invest in it daily",
-    "Change is inevitable, growth is optional",
-    "The only person you should try to be better than is who you were yesterday",
-    "Learning is a treasure that will follow its owner everywhere",
-    "The best teacher is experience, the worst teacher is regret",
-    "Your future is created by what you do today, not tomorrow",
+    "To correct your faults is to guard your virtues for tomorrow",
+    "The highest towers begin from the ground up with patience",
+    "Excellence is not an act but a habit formed through time",
+    "The journey of mastery begins with a single moment of choice",
+    "True wisdom comes from knowing the extent of one's ignorance",
+    "The superior person blames themselves, the inferior blames others",
+    "Respect yourself and others will respect you naturally",
     
-    // Courage and Perseverance
-    "Courage is not the absence of fear, but the triumph over it",
-    "Fall seven times, stand up eight",
-    "The greatest glory in living lies not in never falling, but in rising every time we fall",
-    "Persistence guarantees that results are inevitable",
-    "The difference between try and triumph is just a little umph",
+    // Success & Achievement
+    "The greatest glory lies not in never falling but rising again",
+    "Success comes to those who prepare well and leave nothing to chance",
+    "Fortune favors the prepared mind and the resilient spirit",
+    "The masterpiece of life is painted with strokes of persistence",
+    "Achievement flows from the spring of determined action",
+    "Victory belongs to those who believe in it the most enduringly",
     
-    // Peace and Balance
-    "Peace comes from within, do not seek it without",
-    "Balance is not something you find, it's something you create",
-    "Tranquility is found in doing what is right",
-    "Inner peace is the key to outer harmony",
-    "Silence is a source of great strength",
+    // Relationships & Harmony
+    "Harmony in the home is the foundation of all prosperity",
+    "The wise ruler governs their heart before leading others",
+    "In relationships, respect is greater than affection alone",
+    "True friendship multiplies joy and divides grief naturally",
+    "The family that practices virtue creates lasting prosperity",
     
-    // Action and Initiative
-    "Actions speak louder than words, but not nearly as often",
-    "The early bird gets the worm, but the second mouse gets the cheese",
-    "Don't wait for opportunity, create it",
-    "The best time to take action is now",
-    "Tomorrow is often the busiest day of the week",
+    // Character & Virtue
+    "Virtue is not left to stand alone, noble neighbors will come",
+    "The superior person acts before speaking, then speaks according",
+    "To see what is right and not do it is want of courage",
+    "The noble mind seeks to perfect their own character first",
+    "Sincerity becomes apparent, goodness becomes powerful",
     
-    // Dreams and Aspirations
-    "Your dreams are the blueprints of your destiny",
-    "Shoot for the moon, even if you miss, you'll land among the stars",
-    "Dream big and dare to fail",
-    "Your aspirations are your possibilities",
-    "The future belongs to those who believe in the beauty of their dreams",
+    // Time & Patience
+    "Time is the wisest counselor, patience its truest student",
+    "The seasons turn by heaven's law, success comes by wisdom",
+    "Patience is bitter at first but sweet in its rewards",
+    "Time reveals all truth and ripens all deep thoughts",
     
-    // Wisdom and Knowledge
-    "Knowledge speaks, but wisdom listens",
-    "The only true wisdom is in knowing you know nothing",
-    "Education is not preparation for life; education is life itself",
-    "The more you know, the more you realize you don't know",
-    "Wisdom is not a product of schooling but of the lifelong attempt to acquire it",
+    // Knowledge & Learning
+    "Study the past if you would define the future clearly",
+    "Real knowledge is to know the extent of one's ignorance",
+    "Learning without reflection leads not to true wisdom",
+    "By three methods we learn wisdom: reflection, imitation, experience",
     
-    // Change and Adaptation
-    "Change is the only constant in life",
-    "Adapt or perish, now as ever, is nature's inexorable imperative",
-    "The secret of change is to focus all of your energy not on fighting the old, but on building the new",
-    "Life is change, growth is optional, choose wisely",
+    // Inner Strength
+    "The strongest walls are built within the mind and heart",
+    "Inner peace comes from knowing one's true direction",
+    "Strength flows not from physical capacity but indomitable will",
+    "The noble spirit seeks harmony while lesser ones seek agreement",
     
-    // Patience and Timing
-    "Patience is bitter, but its fruit is sweet",
-    "Good things come to those who wait, but better things come to those who work for it",
-    "Time is the most valuable thing a man can spend",
-    "The two most powerful warriors are patience and time",
+    // Change & Adaptation
+    "They who understand change shall prosper through all seasons",
+    "Like water, the wise adapt to any situation naturally",
+    "Change is constant, growth is optional, choose wisely",
+    "The superior person adapts like water, yet maintains integrity",
     
-    // Prosperity and Abundance
-    "Your prosperity will grow with your generosity",
-    "Wealth is not about having a lot of money, it's about having a lot of options",
-    "The greatest wealth is contentment with little",
-    "True abundance is not about material possessions",
+    // Leadership & Influence
+    "The leader is best when people barely know they exist",
+    "Guide others by example rather than force of will",
+    "True power comes from lifting others toward their potential",
+    "Leadership begins with mastery of the self above all",
     
-    // Direction and Purpose
-    "The journey is the reward",
-    "Not all who wander are lost",
-    "Life is not about finding yourself, it's about creating yourself",
-    "Your path is not for others to understand",
+    // Balance & Moderation
+    "The middle path leads to wisdom and lasting peace",
+    "Balance in all things creates harmony in life",
+    "Excess and deficiency are equally at fault always",
+    "The wise maintain balance while others drift to extremes",
     
-    // Mindfulness and Present Moment
-    "Yesterday is history, tomorrow is a mystery, today is a gift",
-    "The present moment is the only moment available to us",
-    "Life is available only in the present moment",
-    "Now is the only time we have",
-    
-    // Creativity and Innovation
-    "Creativity is intelligence having fun",
-    "Innovation distinguishes between a leader and a follower",
-    "The only limit to our realization of tomorrow will be our doubts of today",
-    "Imagination is more important than knowledge"
+    // Purpose & Direction
+    "The journey of a thousand miles reveals its purpose daily",
+    "Your true nature manifests when you follow your path",
+    "The noble mind seeks purpose beyond mere profit",
+    "Direction comes from within, success from persistence"
 };
 
 const int NUM_FORTUNES = sizeof(fortunes) / sizeof(fortunes[0]);

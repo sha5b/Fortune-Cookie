@@ -16,12 +16,12 @@ bool lastCircuitState = HIGH;
 unsigned long lastPrintTime = 0;
 const unsigned long PRINT_INTERVAL = 2000;  // Minimum time between prints (2 seconds)
 
-// Markov Chain structure
-const int MAX_WORD_LENGTH = 12;    
-const int MAX_NODES = 150;         
-const int MAX_NEXT_WORDS = 5;      
-const int MIN_FORTUNE_WORDS = 6;   
-const int MAX_FORTUNE_WORDS = 12;  
+// Markov Chain structure - Increased limits for more complex content
+const int MAX_WORD_LENGTH = 15;    // Increased from 12 to allow longer words
+const int MAX_NODES = 200;         // Increased from 150 to allow more unique words
+const int MAX_NEXT_WORDS = 8;      // Increased from 5 to allow more varied combinations
+const int MIN_FORTUNE_WORDS = 5;   // Decreased to allow shorter, punchier sentences
+const int MAX_FORTUNE_WORDS = 18;  // Increased to allow longer philosophical statements
 
 struct MarkovNode {
     char word[MAX_WORD_LENGTH];
@@ -44,16 +44,16 @@ void printerInit() {
     PrinterSerial.write('@');  // Initialize command
     delay(50);
     
-    // Set double size text
+    // Set slightly smaller text size (14 instead of 17)
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(17);  // Double width and height (16 + 1)
+    PrinterSerial.write(14);  // Slightly reduced size
     delay(50);
     
     // Set line spacing
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('3');  // Line spacing command
-    PrinterSerial.write(45);  // Increased spacing for larger text
+    PrinterSerial.write(40);  // Slightly reduced spacing
     delay(50);
 }
 
@@ -134,14 +134,14 @@ void buildMarkovChain() {
         
         int start = 0;
         int wordCount = 0;
-        const char* words[15];
+        const char* words[25];  // Increased buffer for longer sentences
         
         for (int j = 0; j <= fortune.length(); j++) {
             if (j == fortune.length() || fortune[j] == ' ') {
                 if (j - start < MAX_WORD_LENGTH) {
                     fortune.substring(start, j).toCharArray(wordBuffer, MAX_WORD_LENGTH);
                     words[wordCount++] = strdup(wordBuffer);
-                    if (wordCount >= 15) break;
+                    if (wordCount >= 25) break;
                 }
                 start = j + 1;
             }
@@ -197,9 +197,21 @@ String generateFortune() {
     String fortune = nodes[currentNode].word;
     int length = 1;
     
+    // Randomly choose target length between MIN and MAX
+    int targetLength = random(MIN_FORTUNE_WORDS, MAX_FORTUNE_WORDS + 1);
+    
     while (length < MAX_FORTUNE_WORDS) {
-        if ((length >= MIN_FORTUNE_WORDS && nodes[currentNode].canEndSentence && random(3) == 0) ||
-            nodes[currentNode].numNextWords == 0) {
+        // Dynamically adjust end probability based on current length vs target
+        bool shouldEnd = false;
+        if (length >= MIN_FORTUNE_WORDS) {
+            if (length >= targetLength) {
+                shouldEnd = nodes[currentNode].canEndSentence;
+            } else {
+                shouldEnd = nodes[currentNode].canEndSentence && random(5) == 0;
+            }
+        }
+        
+        if (shouldEnd || nodes[currentNode].numNextWords == 0) {
             break;
         }
         
@@ -226,26 +238,26 @@ void printFortune(const String& fortune) {
     
     isPrinting = true;
     
-    // Initialize printer with double size text
+    // Initialize printer with slightly smaller text
     printerInit();
     
     // Print with extra spacing
     printerFeed(2);
     
-    // Print title with extra large text
+    // Print title with large text (but slightly smaller than before)
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(49);  // Triple size (48 + 1)
+    PrinterSerial.write(45);  // Slightly reduced from 49
     printerWrite("YOUR FORTUNE");
     printerFeed(2);
     
-    // Reset to double size for fortune text
+    // Reset to normal fortune text size
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(17);  // Double size (16 + 1)
+    PrinterSerial.write(14);  // Slightly reduced size
     
     // Print fortune text with word wrapping
-    char buffer[100];
+    char buffer[150];  // Increased buffer for longer fortunes
     fortune.toCharArray(buffer, sizeof(buffer));
     
     // Split text into words and print with proper spacing
@@ -255,8 +267,8 @@ void printFortune(const String& fortune) {
     while (word != NULL) {
         int wordLen = strlen(word);
         
-        // Check if we need to start a new line
-        if (lineLength + wordLen + 1 > 16) {  // 16 characters per line for double size text
+        // Check if we need to start a new line (adjusted for new font size)
+        if (lineLength + wordLen + 1 > 18) {  // Increased from 16 due to smaller font
             printerFeed(2);  // Extra space between lines
             lineLength = 0;
         }
@@ -272,8 +284,8 @@ void printFortune(const String& fortune) {
         word = strtok(NULL, " ");
     }
     
-    // Add extra space at the end
-    printerFeed(3);
+    // Add extra feed at the end to ensure the fortune is fully ejected
+    printerFeed(8);
     
     isPrinting = false;
 }
