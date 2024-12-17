@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "Adafruit_Thermal.h"
 #include <HardwareSerial.h>
+#include "fortunes.h"
 
 // Define pins
 const int CIRCUIT_PIN = 4;  // Input pin for circuit detection
@@ -11,30 +12,14 @@ const int PRINTER_TX = 17;  // Printer TX pin
 HardwareSerial PrinterSerial(2);  // Use hardware serial 2
 Adafruit_Thermal printer(&PrinterSerial);
 
-// Fortune cookie wisdom source texts
-const char* fortunes[] = {
-    "Life is a series of surprises",
-    "Fortune favors the bold and the brave",
-    "A journey of a thousand miles begins with a single step",
-    "Wisdom comes from experience, experience comes from mistakes",
-    "The best way to predict the future is to create it",
-    "Every cloud has a silver lining",
-    "Good things come to those who wait",
-    "Actions speak louder than words",
-    "Time heals all wounds",
-    "Where there's a will, there's a way"
-};
-
-const int NUM_FORTUNES = sizeof(fortunes) / sizeof(fortunes[0]);
-
 // Markov Chain structure
 struct MarkovNode {
     String word;
-    String nextWords[5];  // Store up to 5 possible next words
+    String nextWords[10];  // Store up to 10 possible next words
     int numNextWords;
 };
 
-const int MAX_NODES = 50;
+const int MAX_NODES = 200;  // Increased for more unique words
 MarkovNode nodes[MAX_NODES];
 int numNodes = 0;
 
@@ -61,9 +46,21 @@ int findOrCreateNode(String word) {
 void addTransition(String word1, String word2) {
     int nodeIndex = findOrCreateNode(word1);
     
-    // Add next word if space available
-    if (nodes[nodeIndex].numNextWords < 5) {
-        nodes[nodeIndex].nextWords[nodes[nodeIndex].numNextWords++] = word2;
+    // Add next word if space available and not already present
+    if (nodes[nodeIndex].numNextWords < 10) {
+        // Check if word2 is already in nextWords
+        bool exists = false;
+        for (int i = 0; i < nodes[nodeIndex].numNextWords; i++) {
+            if (nodes[nodeIndex].nextWords[i] == word2) {
+                exists = true;
+                break;
+            }
+        }
+        
+        // Add if not already present
+        if (!exists) {
+            nodes[nodeIndex].nextWords[nodes[nodeIndex].numNextWords++] = word2;
+        }
     }
 }
 
@@ -71,7 +68,7 @@ void addTransition(String word1, String word2) {
 void buildMarkovChain() {
     for (int i = 0; i < NUM_FORTUNES; i++) {
         String fortune = fortunes[i];
-        String words[20];  // Max 20 words per fortune
+        String words[30];  // Max 30 words per fortune
         int wordCount = 0;
         
         // Split fortune into words
@@ -98,8 +95,8 @@ String generateFortune() {
     String fortune = nodes[currentNode].word;
     int length = 1;
     
-    // Generate up to 15 words
-    while (length < 15 && nodes[currentNode].numNextWords > 0) {
+    // Generate up to 20 words
+    while (length < 20 && nodes[currentNode].numNextWords > 0) {
         // Pick random next word
         int nextWordIndex = random(nodes[currentNode].numNextWords);
         String nextWord = nodes[currentNode].nextWords[nextWordIndex];
@@ -119,6 +116,41 @@ String generateFortune() {
     return fortune;
 }
 
+// Print text with word wrapping
+void printWrappedText(const String& text, int maxWidth = 32) {
+    String currentLine;
+    String words[30];
+    int wordCount = 0;
+    
+    // Split into words
+    int start = 0;
+    for (int i = 0; i < text.length(); i++) {
+        if (text[i] == ' ' || i == text.length() - 1) {
+            words[wordCount++] = text.substring(start, i == text.length() - 1 ? i + 1 : i);
+            start = i + 1;
+        }
+    }
+    
+    // Build lines
+    for (int i = 0; i < wordCount; i++) {
+        String testLine = currentLine;
+        if (testLine.length() > 0) testLine += " ";
+        testLine += words[i];
+        
+        if (testLine.length() > maxWidth) {
+            printer.println(currentLine);
+            currentLine = words[i];
+        } else {
+            currentLine = testLine;
+        }
+    }
+    
+    // Print last line if any
+    if (currentLine.length() > 0) {
+        printer.println(currentLine);
+    }
+}
+
 void setup() {
     // Initialize serial for debugging
     Serial.begin(115200);
@@ -130,13 +162,14 @@ void setup() {
     // Set up input pin
     pinMode(CIRCUIT_PIN, INPUT_PULLUP);
     
-    // Initialize random seed
+    // Initialize random seed using analog noise
     randomSeed(analogRead(0));
     
     // Build Markov chain
     buildMarkovChain();
     
     Serial.println("Setup complete!");
+    Serial.printf("Initialized with %d nodes from %d source fortunes\n", numNodes, NUM_FORTUNES);
 }
 
 void loop() {
@@ -146,14 +179,23 @@ void loop() {
         
         // Generate and print fortune
         String fortune = generateFortune();
+        Serial.println("Generated fortune: " + fortune);
         
         printer.wake();       // Wake up printer
         printer.setSize('M'); // Set medium text size
         
-        // Print fortune with some decoration
-        printer.println("* * * * * * * * * *");
-        printer.println(fortune);
-        printer.println("* * * * * * * * * *");
+        // Print decorative header
+        printer.println("╔══════════════════╗");
+        printer.println("║   YOUR FORTUNE   ║");
+        printer.println("╚══════════════════╝");
+        printer.println();
+        
+        // Print wrapped fortune
+        printWrappedText(fortune);
+        printer.println();
+        
+        // Print decorative footer
+        printer.println("~ ~ ~ ~ ~ ~ ~ ~ ~ ~");
         printer.feed(3);      // Feed paper 3 lines
         
         printer.sleep();      // Sleep printer
