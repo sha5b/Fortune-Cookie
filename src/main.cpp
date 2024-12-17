@@ -1,23 +1,27 @@
 #include <Arduino.h>
-#include "Adafruit_Thermal.h"
 #include <HardwareSerial.h>
 #include "fortunes.h"
 
 // Define pins
 const int CIRCUIT_PIN = 4;     // Input pin for circuit detection
-const int PRINTER_RX = 16;     // Printer RX pin
-const int PRINTER_TX = 17;     // Printer TX pin
+const int PRINTER_RX = 32;     // Printer TX pin
+const int PRINTER_TX = 33;     // Printer RX pin
 
-// Initialize printer on Serial2
+// Initialize printer serial directly
 HardwareSerial PrinterSerial(2);  // Use hardware serial 2
-Adafruit_Thermal printer(&PrinterSerial);
 
-// Optimized Markov Chain structure
-const int MAX_WORD_LENGTH = 12;    // Reduced from 16
-const int MAX_NODES = 150;         // Reduced from 200
-const int MAX_NEXT_WORDS = 5;      // Reduced from 10
-const int MIN_FORTUNE_WORDS = 6;   // Minimum words in generated fortune
-const int MAX_FORTUNE_WORDS = 12;  // Maximum words in generated fortune
+// State tracking
+bool isPrinting = false;
+bool lastCircuitState = HIGH;
+unsigned long lastPrintTime = 0;
+const unsigned long PRINT_INTERVAL = 2000;  // Minimum time between prints (2 seconds)
+
+// Markov Chain structure
+const int MAX_WORD_LENGTH = 12;    
+const int MAX_NODES = 150;         
+const int MAX_NEXT_WORDS = 5;      
+const int MIN_FORTUNE_WORDS = 6;   
+const int MAX_FORTUNE_WORDS = 12;  
 
 struct MarkovNode {
     char word[MAX_WORD_LENGTH];
@@ -26,28 +30,45 @@ struct MarkovNode {
         uint8_t count;
     } nextWords[MAX_NEXT_WORDS];
     uint8_t numNextWords;
-    bool canStartSentence;    // New flag for sentence starters
+    bool canStartSentence;    
     bool canEndSentence;
 };
 
 MarkovNode nodes[MAX_NODES];
 uint16_t numNodes = 0;
 
-// Circuit state tracking
-bool lastCircuitState = HIGH;
-unsigned long lastPrintTime = 0;
-const unsigned long PRINT_INTERVAL = 2000;  // Minimum time between prints (2 seconds)
+// Function declarations
+void printerWrite(const char* str);
+void printerNewLine();
+int findOrCreateNode(const char* word);
+void addTransition(const char* word1, const char* word2, bool isFirstWord, bool isLastWord);
+void buildMarkovChain();
+const char* selectNextWord(int nodeIndex, const char* currentWord);
+String generateFortune();
+void printFortune(const String& fortune);
+
+// Basic printer functions
+void printerWrite(const char* str) {
+    while (*str) {
+        PrinterSerial.write(*str++);
+        delay(1);  // Small delay between characters
+    }
+}
+
+void printerNewLine() {
+    PrinterSerial.write('\r');
+    PrinterSerial.write('\n');
+    delay(10);  // Delay after line feed
+}
 
 // Find or create a node for a word
 int findOrCreateNode(const char* word) {
-    // Look for existing node
     for (int i = 0; i < numNodes; i++) {
         if (strcmp(nodes[i].word, word) == 0) {
             return i;
         }
     }
     
-    // Create new node if space available
     if (numNodes < MAX_NODES) {
         strncpy(nodes[numNodes].word, word, MAX_WORD_LENGTH - 1);
         nodes[numNodes].word[MAX_WORD_LENGTH - 1] = '\0';
@@ -57,18 +78,16 @@ int findOrCreateNode(const char* word) {
         return numNodes++;
     }
     
-    return -1; // Return error if full
+    return -1;
 }
 
-// Add a transition between words
 void addTransition(const char* word1, const char* word2, bool isFirstWord, bool isLastWord) {
     int nodeIndex = findOrCreateNode(word1);
-    if (nodeIndex == -1) return;  // Skip if full
+    if (nodeIndex == -1) return;
     
     int nextNodeIndex = findOrCreateNode(word2);
-    if (nextNodeIndex == -1) return;  // Skip if full
+    if (nextNodeIndex == -1) return;
     
-    // Update sentence position flags
     if (isFirstWord) {
         nodes[nodeIndex].canStartSentence = true;
     }
@@ -76,7 +95,6 @@ void addTransition(const char* word1, const char* word2, bool isFirstWord, bool 
         nodes[nodeIndex].canEndSentence = true;
     }
     
-    // Look for existing transition
     for (int i = 0; i < nodes[nodeIndex].numNextWords; i++) {
         if (nodes[nodeIndex].nextWords[i].nodeIndex == nextNodeIndex) {
             if (nodes[nodeIndex].nextWords[i].count < 255) {
@@ -86,7 +104,6 @@ void addTransition(const char* word1, const char* word2, bool isFirstWord, bool 
         }
     }
     
-    // Add new transition if space available
     if (nodes[nodeIndex].numNextWords < MAX_NEXT_WORDS) {
         nodes[nodeIndex].nextWords[nodes[nodeIndex].numNextWords].nodeIndex = nextNodeIndex;
         nodes[nodeIndex].nextWords[nodes[nodeIndex].numNextWords].count = 1;
@@ -94,7 +111,6 @@ void addTransition(const char* word1, const char* word2, bool isFirstWord, bool 
     }
 }
 
-// Build Markov chain from fortune array
 void buildMarkovChain() {
     char wordBuffer[MAX_WORD_LENGTH];
     
@@ -103,55 +119,48 @@ void buildMarkovChain() {
         
         int start = 0;
         int wordCount = 0;
-        const char* words[15];  // Reduced buffer size
+        const char* words[15];
         
-        // Split fortune into words
         for (int j = 0; j <= fortune.length(); j++) {
             if (j == fortune.length() || fortune[j] == ' ') {
                 if (j - start < MAX_WORD_LENGTH) {
                     fortune.substring(start, j).toCharArray(wordBuffer, MAX_WORD_LENGTH);
                     words[wordCount++] = strdup(wordBuffer);
-                    if (wordCount >= 15) break;  // Prevent buffer overflow
+                    if (wordCount >= 15) break;
                 }
                 start = j + 1;
             }
         }
         
-        // Add transitions between consecutive words
         for (int j = 0; j < wordCount - 1; j++) {
             addTransition(words[j], words[j + 1], j == 0, j == wordCount - 2);
         }
         
-        // Free allocated memory
         for (int j = 0; j < wordCount; j++) {
             free((void*)words[j]);
         }
     }
 }
 
-// Select next word based on weighted probability
 const char* selectNextWord(int nodeIndex, const char* currentWord) {
     if (nodes[nodeIndex].numNextWords == 0) return nullptr;
     
-    // Calculate total weight excluding repetitions
     int totalWeight = 0;
     for (int i = 0; i < nodes[nodeIndex].numNextWords; i++) {
         const char* nextWord = nodes[nodes[nodeIndex].nextWords[i].nodeIndex].word;
-        if (strcmp(nextWord, currentWord) != 0) {  // Prevent repetition
+        if (strcmp(nextWord, currentWord) != 0) {
             totalWeight += nodes[nodeIndex].nextWords[i].count;
         }
     }
     
-    if (totalWeight == 0) return nullptr;  // No valid next words
+    if (totalWeight == 0) return nullptr;
     
-    // Select random weight
     int randomWeight = random(totalWeight);
     
-    // Find corresponding word
     int currentWeight = 0;
     for (int i = 0; i < nodes[nodeIndex].numNextWords; i++) {
         const char* nextWord = nodes[nodes[nodeIndex].nextWords[i].nodeIndex].word;
-        if (strcmp(nextWord, currentWord) != 0) {  // Prevent repetition
+        if (strcmp(nextWord, currentWord) != 0) {
             currentWeight += nodes[nodeIndex].nextWords[i].count;
             if (randomWeight < currentWeight) {
                 return nextWord;
@@ -162,9 +171,7 @@ const char* selectNextWord(int nodeIndex, const char* currentWord) {
     return nullptr;
 }
 
-// Generate a random fortune using enhanced Markov chain
 String generateFortune() {
-    // Start with a random word that can start a sentence
     int attempts = 0;
     int currentNode;
     do {
@@ -175,7 +182,6 @@ String generateFortune() {
     String fortune = nodes[currentNode].word;
     int length = 1;
     
-    // Generate fortune with better ending conditions
     while (length < MAX_FORTUNE_WORDS) {
         if ((length >= MIN_FORTUNE_WORDS && nodes[currentNode].canEndSentence && random(3) == 0) ||
             nodes[currentNode].numNextWords == 0) {
@@ -189,7 +195,6 @@ String generateFortune() {
         fortune += nextWord;
         length++;
         
-        // Find node for next word
         for (int i = 0; i < numNodes; i++) {
             if (strcmp(nodes[i].word, nextWord) == 0) {
                 currentNode = i;
@@ -201,62 +206,39 @@ String generateFortune() {
     return fortune;
 }
 
-// Print text with word wrapping
-void printWrappedText(const String& text) {
-    int start = 0;
-    int lastSpace = -1;
-    const int maxWidth = 32;  // Maximum characters per line
+void printFortune(const String& fortune) {
+    if (isPrinting) return;
     
-    for (int i = 0; i <= text.length(); i++) {
-        if (i == text.length() || text[i] == ' ') {
-            if (i - start > maxWidth) {
-                if (lastSpace != -1) {
-                    printer.println(text.substring(start, lastSpace));
-                    start = lastSpace + 1;
-                } else {
-                    printer.println(text.substring(start, i));
-                    start = i + 1;
-                }
-            }
-            lastSpace = i;
-        }
-    }
+    isPrinting = true;
     
-    if (start < text.length()) {
-        printer.println(text.substring(start));
-    }
-}
-
-void printAndLogFortune() {
-    String fortune = generateFortune();
-    Serial.println("Circuit triggered - Printing fortune:");
-    Serial.println(fortune);
+    // Print with basic serial writes
+    printerNewLine();
+    printerNewLine();
+    printerWrite("YOUR FORTUNE");
+    printerNewLine();
+    printerNewLine();
     
-    printer.wake();
-    printer.setSize('M');
+    // Print fortune text
+    char buffer[100];
+    fortune.toCharArray(buffer, sizeof(buffer));
+    printerWrite(buffer);
     
-    printer.println("╔══════════════════╗");
-    printer.println("║   YOUR FORTUNE   ║");
-    printer.println("╚══════════════════╝");
-    printer.println();
+    printerNewLine();
+    printerNewLine();
+    printerNewLine();
     
-    printWrappedText(fortune);
-    printer.println();
-    printer.println("~ ~ ~ ~ ~ ~ ~ ~ ~ ~");
-    printer.feed(3);
-    
-    printer.sleep();
+    isPrinting = false;
 }
 
 void setup() {
     Serial.begin(115200);
     
-    PrinterSerial.begin(19200, SERIAL_8N1, PRINTER_RX, PRINTER_TX);
-    printer.begin();
+    // Initialize printer serial with default settings
+    PrinterSerial.begin(9600, SERIAL_8N1, PRINTER_RX, PRINTER_TX);
+    delay(500);
     
-    pinMode(CIRCUIT_PIN, INPUT_PULLUP);  // Enable internal pullup for circuit detection
+    pinMode(CIRCUIT_PIN, INPUT_PULLUP);
     
-    // Initialize random seed using multiple sources
     uint32_t seed = 0;
     for(int i = 0; i < 8; i++) {
         seed = (seed << 4) | (analogRead(0) & 0x0F);
@@ -272,16 +254,21 @@ void setup() {
 }
 
 void loop() {
-    // Read current circuit state
     bool currentState = digitalRead(CIRCUIT_PIN);
     unsigned long currentTime = millis();
     
-    // Check if circuit is closed (LOW) and enough time has passed since last print
-    if (currentState == LOW && (currentTime - lastPrintTime >= PRINT_INTERVAL)) {
-        printAndLogFortune();
+    // Check for new print trigger
+    if (currentState == LOW && lastCircuitState == HIGH && 
+        !isPrinting && (currentTime - lastPrintTime >= PRINT_INTERVAL)) {
+        
+        String fortune = generateFortune();
+        Serial.println("Circuit triggered - Printing fortune:");
+        Serial.println(fortune);
+        
+        printFortune(fortune);
         lastPrintTime = currentTime;
     }
     
     lastCircuitState = currentState;
-    delay(10);  // Small delay in main loop
+    delay(10);
 }
