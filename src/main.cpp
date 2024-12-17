@@ -44,16 +44,23 @@ void printerInit() {
     PrinterSerial.write('@');  // Initialize command
     delay(50);
     
-    // Set slightly smaller text size (14 instead of 17)
+    // Set print temperature to 32 degrees
     PrinterSerial.write(27);  // ESC
-    PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(14);  // Slightly reduced size
+    PrinterSerial.write(55);  // Heat setting command
+    PrinterSerial.write(32);  // Temperature value (32)
+    PrinterSerial.write(3);   // Heat time (standard)
     delay(50);
     
-    // Set line spacing
+    // Set smaller text size for better paper efficiency
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('!');  // Text size command
+    PrinterSerial.write(10);  // Reduced size for better efficiency
+    delay(50);
+    
+    // Set tighter line spacing
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('3');  // Line spacing command
-    PrinterSerial.write(40);  // Slightly reduced spacing
+    PrinterSerial.write(25);  // Reduced spacing for better efficiency
     delay(50);
 }
 
@@ -238,23 +245,23 @@ void printFortune(const String& fortune) {
     
     isPrinting = true;
     
-    // Initialize printer with slightly smaller text
+    // Initialize printer with smaller text
     printerInit();
     
-    // Print with extra spacing
-    printerFeed(2);
+    // Print with minimal spacing
+    printerFeed(1);
     
-    // Print title with large text (but slightly smaller than before)
+    // Print title with medium text size
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(45);  // Slightly reduced from 49
+    PrinterSerial.write(30);  // Reduced title size for better efficiency
     printerWrite("YOUR FORTUNE");
-    printerFeed(2);
+    printerFeed(1);
     
     // Reset to normal fortune text size
     PrinterSerial.write(27);  // ESC
     PrinterSerial.write('!');  // Text size command
-    PrinterSerial.write(14);  // Slightly reduced size
+    PrinterSerial.write(10);  // Smaller size for better efficiency
     
     // Print fortune text with word wrapping
     char buffer[150];  // Increased buffer for longer fortunes
@@ -268,8 +275,8 @@ void printFortune(const String& fortune) {
         int wordLen = strlen(word);
         
         // Check if we need to start a new line (adjusted for new font size)
-        if (lineLength + wordLen + 1 > 18) {  // Increased from 16 due to smaller font
-            printerFeed(2);  // Extra space between lines
+        if (lineLength + wordLen + 1 > 24) {  // Increased character limit due to smaller font
+            printerNewLine();  // Single line feed between wrapped lines
             lineLength = 0;
         }
         
@@ -284,8 +291,8 @@ void printFortune(const String& fortune) {
         word = strtok(NULL, " ");
     }
     
-    // Add extra feed at the end to ensure the fortune is fully ejected
-    printerFeed(8);
+    // Add minimal feed at the end
+    printerFeed(4);
     
     isPrinting = false;
 }
