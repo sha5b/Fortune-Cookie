@@ -37,28 +37,43 @@ struct MarkovNode {
 MarkovNode nodes[MAX_NODES];
 uint16_t numNodes = 0;
 
-// Function declarations
-void printerWrite(const char* str);
-void printerNewLine();
-int findOrCreateNode(const char* word);
-void addTransition(const char* word1, const char* word2, bool isFirstWord, bool isLastWord);
-void buildMarkovChain();
-const char* selectNextWord(int nodeIndex, const char* currentWord);
-String generateFortune();
-void printFortune(const String& fortune);
+// Printer commands
+void printerInit() {
+    // Initialize printer
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('@');  // Initialize command
+    delay(50);
+    
+    // Set double size text
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('!');  // Text size command
+    PrinterSerial.write(17);  // Double width and height (16 + 1)
+    delay(50);
+    
+    // Set line spacing
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('3');  // Line spacing command
+    PrinterSerial.write(45);  // Increased spacing for larger text
+    delay(50);
+}
 
-// Basic printer functions
 void printerWrite(const char* str) {
     while (*str) {
         PrinterSerial.write(*str++);
-        delay(1);  // Small delay between characters
+        delay(2);  // Increased delay between characters
     }
 }
 
 void printerNewLine() {
     PrinterSerial.write('\r');
     PrinterSerial.write('\n');
-    delay(10);  // Delay after line feed
+    delay(50);  // Increased delay after line feed
+}
+
+void printerFeed(int lines) {
+    for (int i = 0; i < lines; i++) {
+        printerNewLine();
+    }
 }
 
 // Find or create a node for a word
@@ -211,21 +226,54 @@ void printFortune(const String& fortune) {
     
     isPrinting = true;
     
-    // Print with basic serial writes
-    printerNewLine();
-    printerNewLine();
-    printerWrite("YOUR FORTUNE");
-    printerNewLine();
-    printerNewLine();
+    // Initialize printer with double size text
+    printerInit();
     
-    // Print fortune text
+    // Print with extra spacing
+    printerFeed(2);
+    
+    // Print title with extra large text
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('!');  // Text size command
+    PrinterSerial.write(49);  // Triple size (48 + 1)
+    printerWrite("YOUR FORTUNE");
+    printerFeed(2);
+    
+    // Reset to double size for fortune text
+    PrinterSerial.write(27);  // ESC
+    PrinterSerial.write('!');  // Text size command
+    PrinterSerial.write(17);  // Double size (16 + 1)
+    
+    // Print fortune text with word wrapping
     char buffer[100];
     fortune.toCharArray(buffer, sizeof(buffer));
-    printerWrite(buffer);
     
-    printerNewLine();
-    printerNewLine();
-    printerNewLine();
+    // Split text into words and print with proper spacing
+    char* word = strtok(buffer, " ");
+    int lineLength = 0;
+    
+    while (word != NULL) {
+        int wordLen = strlen(word);
+        
+        // Check if we need to start a new line
+        if (lineLength + wordLen + 1 > 16) {  // 16 characters per line for double size text
+            printerFeed(2);  // Extra space between lines
+            lineLength = 0;
+        }
+        
+        if (lineLength > 0) {
+            printerWrite(" ");
+            lineLength++;
+        }
+        
+        printerWrite(word);
+        lineLength += wordLen;
+        
+        word = strtok(NULL, " ");
+    }
+    
+    // Add extra space at the end
+    printerFeed(3);
     
     isPrinting = false;
 }
