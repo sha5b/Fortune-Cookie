@@ -1,117 +1,117 @@
 # Fortune Cookie Printer
 
-An ESP32-based Fortune Cookie printer that generates unique wisdom using a Markov chain algorithm and prints them on a thermal printer when triggered by a circuit closure.
-
-## Features
-
-- Generates unique fortunes using a Markov chain algorithm
-- Large dataset of wisdom sayings for natural-sounding output
-- Decorative printing with borders and formatting
-- Simple circuit trigger mechanism
-- Word-wrapped text for clean presentation
+A fun ESP32-based project that generates and prints unique fortunes using a thermal printer. The project uses a Markov chain algorithm to create novel, coherent fortunes based on a curated collection of wisdom quotes and traditional fortune cookie messages.
 
 ## Hardware Requirements
 
-1. ESP32 Development Board
-2. Thermal Printer (Compatible with Adafruit Thermal Printer Library)
-3. Push Button or Contact Switch
-4. 10kΩ Resistor (optional, if not using internal pullup)
-5. Power Supply (5-9V, 2-3A) for the thermal printer
+- ESP32 Development Board
+- Thermal Printer (Compatible with Adafruit Thermal Printer Library)
+- Jumper Wires
+- Optional: Project enclosure
 
-## Circuit Connections
+## Wiring
 
-### Thermal Printer
-- Printer RX → ESP32 GPIO 17 (TX2)
-- Printer TX → ESP32 GPIO 16 (RX2)
-- Printer GND → ESP32 GND
-- Printer VH → 5-9V power supply
-- Printer VH GND → Power supply GND
+1. **Thermal Printer Connection:**
+   - RX → GPIO16 (ESP32)
+   - TX → GPIO17 (ESP32)
+   - GND → GND (ESP32)
+   - VH → External 5-9V power supply
+   - DTR → Not connected
 
-### Circuit/Switch
-- One terminal → ESP32 GPIO 4
-- Other terminal → ESP32 GND
-(The internal pullup resistor is enabled in the code, so no external resistor is needed)
+2. **Circuit Trigger:**
+   - Connect GPIO4 to GND to trigger a fortune print
+   - GPIO4 has an internal pull-up resistor enabled
 
-## Software Setup
+## Software Requirements
 
-1. Install PlatformIO in VSCode
-2. Clone this repository
-3. Open the project in PlatformIO
-4. Build and upload to your ESP32
+This project is built using PlatformIO, which provides a powerful development environment and handles all dependencies automatically.
 
-## Operation
+### Required Software
+- VSCode with PlatformIO extension
+- OR PlatformIO Core CLI
+
+### Dependencies
+- Arduino framework for ESP32
+- Adafruit Thermal Printer Library
+
+## Building and Uploading
+
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/yourusername/Fortune-Cookie.git
+   cd Fortune-Cookie
+   ```
+
+2. Open the project in VSCode with PlatformIO:
+   - Open VSCode
+   - Click "Open Folder" and select the project directory
+   - Wait for PlatformIO to initialize the project
+
+3. Build and upload:
+   - Click the "Upload" button in PlatformIO
+   - OR use the command line:
+     ```bash
+     pio run -t upload
+     ```
+
+4. Monitor serial output (optional):
+   ```bash
+   pio device monitor
+   ```
+
+## Usage
 
 1. Power up the ESP32 and thermal printer
-2. The system will initialize and build the Markov chain
-3. When the circuit is closed (button pressed):
-   - A new fortune is generated
-   - The printer wakes up
-   - Prints the fortune with decorative borders
-   - Feeds paper and goes back to sleep
-
-## Serial Monitor Output
-
-You can monitor the operation through the serial monitor at 115200 baud:
-- On startup: "Setup complete!" and initialization statistics
-- On trigger: "Circuit closed - printing fortune!" and the generated text
-
-## Troubleshooting
-
-### Printer Issues
-1. No Response
-   - Check power supply voltage (5-9V) and current capacity (2-3A recommended)
-   - Verify TX/RX connections aren't swapped
-   - Ensure all grounds are connected
-
-2. Garbled Text
-   - Verify printer baud rate (19200)
-   - Check TX/RX connections
-   - Try adjusting printer heating settings
-
-### Circuit Issues
-1. Not Triggering
-   - Check GPIO 4 connection
-   - Verify switch/button connection to ground
-   - Try external pullup resistor if issues persist
-
-2. Multiple Triggers
-   - Check for switch bounce
-   - Increase debounce delay if needed
-
-### Software Issues
-1. Compilation Errors
-   - Verify PlatformIO installation
-   - Check library dependencies
-   - Update platform and libraries
-
-2. Strange Fortunes
-   - Markov chain needs more source material
-   - Check word splitting logic
-   - Verify RAM usage isn't too high
-
-## Customization
-
-You can customize the project by:
-1. Adding more fortune source material in `fortunes.h`
-2. Adjusting Markov chain parameters in `main.cpp`
-3. Modifying printer formatting and decoration
-4. Changing the trigger mechanism or adding multiple inputs
+2. Short GPIO4 to GND to trigger a fortune print
+   - Each time you make this connection, a new fortune will be printed
+   - The circuit can remain shorted to continuously print fortunes (one every 2 seconds)
+3. The printer will output:
+   - A decorative header
+   - Your generated fortune
+   - A decorative footer
 
 ## Technical Details
 
-- Uses Hardware Serial 2 for printer communication
-- Markov chain implementation with up to 200 nodes
-- Each node can store up to 10 next-word transitions
-- Word wrapping at 32 characters for standard thermal paper
-- Internal pullup resistor used for circuit input
+### Fortune Generation
 
-## Contributing
+The project uses a Markov chain algorithm to generate unique fortunes:
+- Pre-loaded with carefully selected wisdom quotes and traditional fortune cookie messages
+- Analyzes word patterns and transitions
+- Generates new, coherent sentences while maintaining fortune cookie style
+- Prevents word repetition and ensures grammatical coherence
+- Optimized for ESP32's memory constraints
 
-Feel free to:
-1. Add more fortune cookie messages
-2. Improve the Markov chain algorithm
-3. Enhance the printing layout
-4. Add new features
+### Memory Optimization
+
+The implementation is carefully optimized for the ESP32:
+- Fixed-size arrays to prevent heap fragmentation
+- Efficient data structures for the Markov chain
+- Minimal memory footprint for word storage
+- Optimized string handling
+
+### Printer Communication
+
+- Uses Hardware Serial (UART2) for reliable printer communication
+- 19200 baud rate for stable printing
+- Implements word wrapping for clean text formatting
+- Handles printer wake/sleep cycles efficiently
+
+## Troubleshooting
+
+1. **Printer not responding:**
+   - Check power supply voltage (should be 5-9V)
+   - Verify TX/RX connections aren't swapped
+   - Ensure proper ground connection
+
+2. **Garbled print output:**
+   - Verify baud rate settings
+   - Check power supply stability
+   - Ensure good connections
+
+3. **Trigger not working:**
+   - Verify GPIO4 connection to GND
+   - Check serial monitor for debug messages
+   - Ensure proper ground reference
 
 ## License
 
