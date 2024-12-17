@@ -1,7 +1,8 @@
 #pragma once
+#include <pgmspace.h>
 
-// Array of fortune cookie messages collected from various sources
-const char* fortunes[] = {
+// Array of fortune cookie messages stored in flash memory
+const char* const fortunes[] PROGMEM = {
     // Life and Wisdom
     "Life is a series of surprises waiting to be discovered",
     "The best way to predict the future is to create it",
@@ -121,3 +122,9 @@ const char* fortunes[] = {
 };
 
 const int NUM_FORTUNES = sizeof(fortunes) / sizeof(fortunes[0]);
+
+// Helper function to read fortune from flash
+String getFortune(int index) {
+    if (index < 0 || index >= NUM_FORTUNES) return "";
+    return String((const char*)pgm_read_ptr(&fortunes[index]));
+}
